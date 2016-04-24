@@ -20,6 +20,7 @@
 #define LUA_CROSS_COMPILER
 #define LUA_USE_LINENOISE
 
+#define lua_c
 #define LUA_PATH_DEFAULT	"?.lua;?.lc;C:\\?.lua;C:\\?.lc;"
 
 /*
@@ -293,7 +294,7 @@
 @* stand-alone interpreter.
 ** CHANGE it if you need longer lines.
 */
-#define LUA_MAXINPUT	128
+#define LUA_MAXINPUT	256
 
 
 /*
@@ -304,6 +305,9 @@
 ** CHANGE them if you want to improve this functionality (e.g., by using
 ** GNU readline and history facilities).
 */
+
+//#define LUA_USE_WDG
+
 #if defined(LUA_CROSS_COMPILER)
 #if defined(LUA_USE_READLINE)
 #include <stdio.h>
@@ -316,7 +320,7 @@
 #define lua_freeline(L,b)	((void)L, free(b))
 #elif defined(LUA_USE_LINENOISE) // #if defined(LUA_USE_READLINE)
 #include "linenoise.h"
-#define lua_readline(L,b,p)     ((void)L, (linenoise_getline(LINENOISE_ID_LUA,b,LUA_MAXINPUT,p)) != -1)
+#define lua_readline(L,b,p)     ((void)L, (linenoise_getline(LINENOISE_ID_LUA,b,LUA_MAXINPUT,p)) == 0)
 #define lua_saveline(L,idx) \
 	if (lua_strlen(L,idx) > 0)  /* non-empty line? */ \
 	  linenoise_addhistory(LINENOISE_ID_LUA, lua_tostring(L, idx));  /* add it to history */

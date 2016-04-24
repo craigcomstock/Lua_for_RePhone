@@ -323,6 +323,7 @@ static const char *min_expand (MatchState *ms, const char *s,
       s++;  /* try with one more repetition */
     else return NULL;
   }
+  return NULL;
 }
 
 
@@ -402,6 +403,7 @@ static const char *match (MatchState *ms, const char *s, const char *p) {
           goto dflt;  /* case default */
         }
       }
+      break;
     }
     case '\0': {  /* end of pattern */
       return s;  /* match succeeded */

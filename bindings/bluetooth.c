@@ -295,8 +295,8 @@ const LUA_REG_TYPE bluetooth_spp_map[] = { { LSTRKEY("open"), LFUNCVAL(bluetooth
 
 LUALIB_API int luaopen_bluetooth(lua_State* L)
 {
-    luaL_register(L, "bluetooth", bluetooth_map);
+    luaL_register(L, "bt", bluetooth_map);
 
-    luaL_register(L, "btspp", bluetooth_spp_map);
+    luaL_register(L, "bts", bluetooth_spp_map);
     return 1;
 }

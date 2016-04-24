@@ -416,38 +416,55 @@ int linenoise_savehistory( int id, const char *filename )
 #include <string.h>
 
 extern int retarget_getc();
-extern void retarget_putc(char c);
-extern void retarget_puts(char *s); 
 
+#if defined (LUA_USE_WDG)
+static char bkpbuff[256] = {0};
+static int hasbkp = 0;
+#endif
+
+//--------------------------------------------------------------------------------
 int linenoise_getline( int id, char* buffer, int buffer_size, const char* prompt )
 {
-    int ch;
-    int line_position;
+    int ch = 0;
+    int line_position = 0;
+#if defined (LUA_USE_WDG)
+    if (hasbkp) {
+	    memset(buffer, 0, buffer_size);
+    	strcpy(buffer, bkpbuff);
+    	line_position = strlen(buffer);
+        memset(bkpbuff, 0, 256);
+    }
+#endif
+
 start:
     /* show prompt */
-    retarget_puts(prompt);
+#if defined (LUA_USE_WDG)
+	if (hasbkp == 0) {
+		fputs(prompt, stdout);
+		fflush(stdout);
+	    memset(buffer, 0, buffer_size);
+	}
+	else hasbkp = 0;
+#else
+	fputs(prompt, stdout);
+	fflush(stdout);
+#endif
 
-    line_position = 0;
-    memset(buffer, 0, buffer_size);
-    while (1)
-    {
+	while (1) {
         ch = retarget_getc(stdin);
-        if (ch >= 0)
-        {
+        if (ch >= 0) {
             /* backspace key */
-            if (ch == 0x7f || ch == 0x08)
-            {
-                if (line_position > 0)
-                {
-                    retarget_puts("\x08 \x08");
+            if (ch == 0x7f || ch == 0x08) {
+                if (line_position > 0) {
+                    fputs("\x08 \x08", stdout);
+                    fflush(stdout);
                     line_position--;
                 }
                 buffer[line_position] = 0;
                 continue;
             }
             /* EOF(ctrl+d) */
-            else if (ch == 0x04)
-            {
+            else if (ch == 0x04) {
                 if (line_position == 0)
                     /* No input which makes lua interpreter close */
                     return 0;
@@ -456,39 +473,49 @@ start:
             }
 
             /* end of line */
-            if (ch == '\n' || ch == '\r')
-            {
+            if (ch == '\r' || ch == '\n') {
                 buffer[line_position] = 0;
-                retarget_putc('\n');
-                if (line_position == 0)
-                {
-                    /* Get a empty line, then go to get a new line */
-                    goto start;
-                }
-                else
-                {
-                    return line_position;
-                }
+
+				fputc('\n', stdout);
+				fflush(stdout);
+				if (line_position == 0)	{
+					/* Get a empty line, then go to get a new line */
+					goto start;
+				}
+				else {
+					return line_position;
+				}
             }
 
             /* other control character or not an acsii character */
-            if (ch < 0x20 || ch >= 0x80)
-            {
-                continue;
-            }
+            if (ch < 0x20 || ch >= 0x80) continue;
 
             /* echo */
-            retarget_putc(ch);
-            buffer[line_position] = ch;
-            ch = 0;
+			fputc(ch, stdout);
+			fflush(stdout);
+
+			buffer[line_position] = ch;
+            ch = 1;
             line_position++;
+            buffer[line_position] = '\0';
 
             /* it's a large line, discard it */
-            if (line_position >= buffer_size)
-                line_position = 0;
+            if (line_position >= buffer_size) {
+            	line_position = 0;
+                memset(buffer, 0, buffer_size);
+            }
        }
+#if defined (LUA_USE_WDG)
+       else {
+    	   if (line_position > 0) {
+    		   strncpy(bkpbuff, buffer, line_position);
+    		   hasbkp = 1;
+    	   }
+    	   sprintf(buffer, "os.wdtreset()");
+    	   return 14;
+       }
+#endif
     }
-
 }
 
 int linenoise_addhistory( int id, const char *line )

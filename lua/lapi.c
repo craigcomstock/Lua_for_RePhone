@@ -853,7 +853,6 @@ static void f_call (lua_State *L, void *ud) {
 }
 
 
-
 LUA_API int lua_pcall (lua_State *L, int nargs, int nresults, int errfunc) {
   struct CallS c;
   int status;

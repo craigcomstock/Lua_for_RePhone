@@ -204,13 +204,13 @@ static int io_popen (lua_State *L) {
   return (*pf == NULL) ? pushresult(L, 0, filename) : 1;
 }
 
-
+/*
 static int io_tmpfile (lua_State *L) {
   FILE **pf = newfile(L);
   *pf = tmpfile();
   return (*pf == NULL) ? pushresult(L, 0, NULL) : 1;
 }
-
+*/
 
 static FILE *getiofile (lua_State *L, int findex) {
   FILE *f;
@@ -335,6 +335,7 @@ static int read_line (lua_State *L, FILE *f) {
       return 1;  /* read at least an `eol' */
     }
   }
+  return 0;  //
 }
 
 
@@ -516,7 +517,7 @@ const LUA_REG_TYPE iolib[] = {
   {LSTRKEY("output"), LFUNCVAL(io_output)},
   {LSTRKEY("popen"), LFUNCVAL(io_popen)},
   {LSTRKEY("read"), LFUNCVAL(io_read)},
-  {LSTRKEY("tmpfile"), LFUNCVAL(io_tmpfile)},
+  //{LSTRKEY("tmpfile"), LFUNCVAL(io_tmpfile)},
   {LSTRKEY("type"), LFUNCVAL(io_type)},
   {LSTRKEY("write"), LFUNCVAL(io_write)},
   {LNILKEY, LNILVAL}

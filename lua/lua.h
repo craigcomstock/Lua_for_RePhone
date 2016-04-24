@@ -283,7 +283,7 @@ LUA_API void lua_setallocf (lua_State *L, lua_Alloc f, void *ud);
 #define lua_setglobal(L,s)	lua_setfield(L, LUA_GLOBALSINDEX, (s))
 #define lua_getglobal(L,s)	lua_getfield(L, LUA_GLOBALSINDEX, (s))
 
-#define lua_tostring(L,i)	lua_tolstring(L, (i), NULL)
+#define lua_tostring(L,i)	(char *)lua_tolstring(L, (i), NULL)
 
 
 
@@ -371,6 +371,7 @@ struct lua_Debug {
 /* }====================================================================== */
 
 int lua_main( int argc, char **argv );
+void l_message (const char *pname, const char *msg);
 
 /******************************************************************************
 * Copyright (C) 1994-2008 Lua.org, PUC-Rio.  All rights reserved.

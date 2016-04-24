@@ -60,7 +60,6 @@ static int i2c_send(lua_State* L)
     uint8_t wbuf_index = 0;
 
     param.data_ptr = wbuf;
-    param.transfer_number = 1;
 
     if(lua_gettop(L) < 1)
         return luaL_error(L, "invalid number of arguments");
@@ -76,6 +75,7 @@ static int i2c_send(lua_State* L)
             wbuf_index++;
             if(wbuf_index >= 8) {
                 param.data_length = wbuf_index;
+                param.transfer_number = wbuf_index;
                 vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_CONT_WRITE, &param);
                 wbuf_index = 0;
                 wrote += 8;
@@ -93,6 +93,7 @@ static int i2c_send(lua_State* L)
                 wbuf_index++;
                 if(wbuf_index >= 8) {
                     param.data_length = wbuf_index;
+                    param.transfer_number = wbuf_index;
                     vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_CONT_WRITE, &param);
                     wbuf_index = 0;
                     wrote += 8;
@@ -101,10 +102,11 @@ static int i2c_send(lua_State* L)
         } else {
             pdata = luaL_checklstring(L, argn, &datalen);
             for(i = 0; i < datalen; i++) {
-                wbuf[wbuf_index] = pdata[i];
+                wbuf[wbuf_index] = numdata;
                 wbuf_index++;
                 if(wbuf_index >= 8) {
                     param.data_length = wbuf_index;
+                    param.transfer_number = wbuf_index;
                     vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_CONT_WRITE, &param);
                     wbuf_index = 0;
                     wrote += 8;
@@ -115,6 +117,7 @@ static int i2c_send(lua_State* L)
 
     if(wbuf_index) {
         param.data_length = wbuf_index;
+        param.transfer_number = wbuf_index;
         vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_CONT_WRITE, &param);
         wrote += wbuf_index;
     }
@@ -137,13 +140,13 @@ static int i2c_recv(lua_State* L)
         return 0;
 
     param.data_ptr = rbuf;
-    param.transfer_number = 1;
 
     luaL_buffinit(L, &b);
 
     do {
         if(size >= 8) {
             param.data_length = 8;
+            param.transfer_number = 8;
             status = vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_CONT_READ, &param);
             if(status != VM_DCL_STATUS_OK) {
                 break;
@@ -156,6 +159,7 @@ static int i2c_recv(lua_State* L)
             size -= 8;
         } else {
             param.data_length = size;
+            param.transfer_number = size;
             status = vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_CONT_READ, &param);
             if(status != VM_DCL_STATUS_OK) {
                 break;
@@ -231,7 +235,7 @@ static int i2c_txrx(lua_State* L)
                 if(wbuf_index > 8) {
                     return luaL_error(L, "write data length must not exceed 8");
                 }
-                wbuf[wbuf_index] = pdata[i];
+                wbuf[wbuf_index] = numdata;
                 wbuf_index++;
             }
         }
@@ -243,7 +247,7 @@ static int i2c_txrx(lua_State* L)
     param.in_data_ptr = rbuf;
 
     if(vm_dcl_control(g_i2c_handle, VM_DCL_I2C_CMD_WRITE_AND_READ, &param) != VM_DCL_STATUS_OK) {
-        return luaL_error(L, "i2c read&write failed");
+        return 0;
     }
 
     luaL_buffinit(L, &b);

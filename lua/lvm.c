@@ -27,6 +27,8 @@
 #include "lvm.h"
 #include "lrotable.h"
 
+#include "shell.h"
+
 
 /* limit for table tag-method chains (to avoid loops) */
 #define MAXTAGLOOP	100
@@ -252,6 +254,7 @@ static int l_strcmp (const TString *ls, const TString *rs) {
       l += len; ll -= len; r += len; lr -= len;
     }
   }
+  return -1;
 }
 
 
@@ -423,7 +426,6 @@ static void Arith (lua_State *L, StkId ra, const TValue *rb,
       }
 
 
-
 void luaV_execute (lua_State *L, int nexeccalls) {
   LClosure *cl;
   StkId base;
@@ -440,7 +442,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
     const Instruction i = *pc++;
     StkId ra;
     if ((L->hookmask & (LUA_MASKLINE | LUA_MASKCOUNT)) &&
-        (--L->hookcount == 0 || L->hookmask & LUA_MASKLINE)) {
+        (--L->hookcount == 0 || (L->hookmask & LUA_MASKLINE))) {
       traceexec(L, pc);
       if (L->status == LUA_YIELD) {  /* did hook yield? */
         L->savedpc = pc - 1;
@@ -638,7 +640,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
         continue;
       }
       case OP_CALL: {
-        int b = GETARG_B(i);
+   	    int b = GETARG_B(i);
         int nresults = GETARG_C(i) - 1;
         if (b != 0) L->top = ra+b;  /* else previous instruction set top */
         L->savedpc = pc;
@@ -657,6 +659,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
             return;  /* yield */
           }
         }
+        break;
       }
       case OP_TAILCALL: {
         int b = GETARG_B(i);
@@ -689,6 +692,7 @@ void luaV_execute (lua_State *L, int nexeccalls) {
             return;  /* yield */
           }
         }
+        break;
       }
       case OP_RETURN: {
         int b = GETARG_B(i);

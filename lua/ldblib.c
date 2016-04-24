@@ -314,6 +314,7 @@ static int db_debug (lua_State *L) {
     }
     lua_settop(L, 0);  /* remove eventual returns */
   }
+  return 0;
 }
 
 

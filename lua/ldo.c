@@ -376,7 +376,6 @@ int luaD_poscall (lua_State *L, StkId firstResult) {
   return (wanted - LUA_MULTRET);  /* 0 iff wanted == LUA_MULTRET */
 }
 
-
 /*
 ** Call a function (C or Lua). The function to be called is at *func.
 ** The arguments are on the stack, right after the function.
