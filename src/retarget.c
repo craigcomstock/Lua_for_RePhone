@@ -101,6 +101,8 @@ void retarget_putc(char ch)
 {
     VM_DCL_BUFFER_LENGTH writen_len = 0;
     vm_dcl_write(retarget_device_handle, (VM_DCL_BUFFER *)&ch, 1, &writen_len, g_owner_id);
+    if(ch==10)
+	    retarget_putc(13);
 }
 
 void retarget_puts(const char *str)
