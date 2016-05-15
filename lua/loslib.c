@@ -20,6 +20,8 @@
 #include "lualib.h"
 #include "lrotable.h"
 
+#include "vmlog.h"
+#include "vmpwr.h"
 
 static int os_pushresult (lua_State *L, int i, const char *filename) {
   int en = errno;  /* calls to Lua API may change this value */
@@ -218,6 +220,55 @@ static int os_setlocale (lua_State *L) {
 static int os_exit (lua_State *L) {
   exit(luaL_optint(L, 1, EXIT_SUCCESS));
 }
+static uint32_t os_getaddr(lua_State *L, int index) 
+{
+	if (lua_isuserdata(L,index)) {
+		return (uint32_t)lua_touserdata(L,index);
+	} else {
+		// TODO handle errors like LONG_MAX, LONG_MIN and check errno.
+		return (uint32_t)strtoll(lua_tostring(L,index),NULL,0);
+	}
+}
+static int os_jmp (lua_State *L) {
+	uint32_t addr = os_getaddr(L,1);
+	((void(*)(void))addr)();
+}
+
+static int os_peek (lua_State *L) 
+{
+	uint32_t addr = os_getaddr(L,1);
+	uint32_t val = *((volatile uint32_t *)addr);
+
+//	vm_log_debug("peek(%#08x)=%#08x\n", addr, val);
+
+	lua_pushnumber(L, val);
+	return 1;
+}
+
+static int os_poke (lua_State *L) 
+{
+	uint32_t addr = os_getaddr(L,1);
+	uint32_t val = luaL_checklong(L,2);
+//	vm_log_debug("poke(%#08x,%#08x)\n", addr, val);
+	*((volatile uint32_t *)addr) = val;
+	return 0;
+}
+
+static int os_symbol(lua_State *L)
+{
+	// CRAIG TODO take as a parameter a function name
+	// then somehow we search for it... maybe with objdump-ish on percommon.a
+	// or also with the header files on flash disk.
+	
+
+	printf("luaopen_os, vm_pwr_reboot=%p, vm_pwr_shutdown=%p\n", vm_pwr_reboot, vm_pwr_shutdown);
+	lua_pushnumber(L,(uint32_t)vm_pwr_reboot);
+	lua_pushnumber(L,(uint32_t)vm_pwr_shutdown);
+
+	return 2;
+}
+// CRAIG TODO make sure on crash (vector table) to properly reboot
+// so rephone goes back to mass storage mode!
 
 #define MIN_OPT_LEVEL 1
 #include "lrodefs.h"
@@ -235,6 +286,10 @@ const LUA_REG_TYPE syslib[] = {
   {LSTRKEY("setlocale"), LFUNCVAL(os_setlocale)},
   {LSTRKEY("time"),      LFUNCVAL(os_time)},
   {LSTRKEY("tmpname"),   LFUNCVAL(os_tmpname)},
+  {LSTRKEY("jmp"), LFUNCVAL(os_jmp)},
+  {LSTRKEY("poke"), LFUNCVAL(os_poke)},
+  {LSTRKEY("peek"), LFUNCVAL(os_peek)},
+  {LSTRKEY("symbol"), LFUNCVAL(os_symbol)},
   {LNILKEY, LNILVAL}
 };
 
@@ -243,5 +298,6 @@ const LUA_REG_TYPE syslib[] = {
 
 
 LUALIB_API int luaopen_os (lua_State *L) {
+
   LREGISTER(L, LUA_OSLIBNAME, syslib);
 }
