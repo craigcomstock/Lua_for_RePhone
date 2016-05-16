@@ -35,6 +35,7 @@ extern int luaopen_https(lua_State* L);
 extern int luaopen_bluetooth(lua_State* L);
 extern int luaopen_button(lua_State* L);
 extern int luaopen_os(lua_State* L);
+extern int luaopen_io(lua_State* L);
 
 // vm_log_* -> lua_log_printf
 #if 0
@@ -124,17 +125,18 @@ void lua_setup()
     lua_gc(L, LUA_GCSTOP, 0); /* stop collector during initialization */
     luaL_openlibs(L);         /* open libraries */
 
-    luaopen_audio(L);
-    luaopen_gsm(L);
-    luaopen_timer(L);
-    luaopen_gpio(L);
+//    luaopen_audio(L);
+//    luaopen_gsm(L);
+//    luaopen_timer(L);
+//    luaopen_gpio(L);
     luaopen_screen(L);
-    luaopen_i2c(L);
-    luaopen_tcp(L);
-    luaopen_https(L);
-    luaopen_bluetooth(L);
-    luaopen_button(L);
+//    luaopen_i2c(L);
+//    luaopen_tcp(L);
+//    luaopen_https(L);
+//    luaopen_bluetooth(L);
+//    luaopen_button(L);
     luaopen_os(L);
+//    luaopen_io(L);
 
     lua_register(L, "msleep", msleep_c);
 

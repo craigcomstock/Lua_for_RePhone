@@ -22,6 +22,11 @@
 
 #include "vmlog.h"
 #include "vmpwr.h"
+#include "vmfs.h"
+#include "vmchset.h"
+#include "vmstdlib.h"
+#include "vmwdt.h"
+#include "vmsystem.h"
 
 static int os_pushresult (lua_State *L, int i, const char *filename) {
   int en = errno;  /* calls to Lua API may change this value */
@@ -216,6 +221,118 @@ static int os_setlocale (lua_State *L) {
   return 1;
 }
 
+//==================================
+static int os_mkdir (lua_State *L) {
+  const char *dirname = luaL_checkstring(L, 1);
+  VMWCHAR ucs_dirname[VM_FS_MAX_PATH_LENGTH+1];
+
+  vm_chset_ascii_to_ucs2(ucs_dirname, VM_FS_MAX_PATH_LENGTH, dirname);
+
+  lua_pushinteger(L, vm_fs_create_directory(ucs_dirname));
+  return 1;
+}
+
+//==================================
+static int os_rmdir (lua_State *L) {
+  const char *dirname = luaL_checkstring(L, 1);
+  VMWCHAR ucs_dirname[VM_FS_MAX_PATH_LENGTH+1];
+
+  vm_chset_ascii_to_ucs2(ucs_dirname, VM_FS_MAX_PATH_LENGTH, dirname);
+
+  lua_pushinteger(L, vm_fs_remove_directory(ucs_dirname));
+  return 1;
+}
+
+//===================================
+static int os_copy (lua_State *L) {
+  VMWCHAR ucs_fromname[VM_FS_MAX_PATH_LENGTH+1];
+  VMWCHAR ucs_toname[VM_FS_MAX_PATH_LENGTH+1];
+
+  const char *fromname = luaL_checkstring(L, 1);
+  const char *toname = luaL_checkstring(L, 2);
+
+  vm_chset_ascii_to_ucs2(ucs_fromname, VM_FS_MAX_PATH_LENGTH, fromname);
+  vm_chset_ascii_to_ucs2(ucs_toname, VM_FS_MAX_PATH_LENGTH, toname);
+
+  lua_pushinteger(L, vm_fs_copy(ucs_toname, ucs_fromname, NULL));
+
+  return 1;
+}
+
+//===================================
+static int os_listfiles(lua_State* L)
+{
+    VMCHAR filename[VM_FS_MAX_PATH_LENGTH] = {0};
+    VMWCHAR wfilename[VM_FS_MAX_PATH_LENGTH] = {0};
+    VMWCHAR path[VM_FS_MAX_PATH_LENGTH] = {0};
+    VMWCHAR fullname[VM_FS_MAX_PATH_LENGTH] = {0};
+    VM_FS_HANDLE filehandle = -1;
+    VM_FS_HANDLE filehandleex = -1;
+    vm_fs_info_t fileinfo;
+    vm_fs_info_ex_t fileinfoex;
+    VMINT ret = 0;
+    struct tm filetime;
+
+    const char *fspec = luaL_optstring(L, 1, "*");
+
+    sprintf(filename, "%c:\\%s", vm_fs_get_internal_drive_letter(), fspec);
+    vm_chset_ascii_to_ucs2(wfilename, sizeof(wfilename), filename);
+    vm_wstr_get_path(wfilename, path);
+
+    // get the max file name length
+    int len = 0;
+    filehandle = vm_fs_find_first(wfilename, &fileinfo);
+    if (filehandle >= 0) {
+        do {
+        	vm_chset_ucs2_to_ascii(filename, VM_FS_MAX_PATH_LENGTH, fileinfo.filename);
+        	int flen = strlen(filename);
+        	if (flen > len) len = flen;
+            ret = vm_fs_find_next(filehandle, &fileinfo);
+        } while (0 == ret);
+        vm_fs_find_close(filehandle);
+    }
+    int total = 0;
+    int nfiles = 0;
+    filehandle = vm_fs_find_first(wfilename, &fileinfo);
+    if (filehandle >= 0) {
+    	vm_chset_ucs2_to_ascii(filename, VM_FS_MAX_PATH_LENGTH, path);
+    	printf("%s\n", filename);
+        do {
+        	vm_wstr_copy(fullname, path);
+        	vm_wstr_concatenate(fullname,(VMCWSTR)(&fileinfo.filename));
+            filehandleex = vm_fs_find_first_ex(fullname, &fileinfoex);
+        	vm_chset_ucs2_to_ascii(filename, VM_FS_MAX_PATH_LENGTH, fileinfoex.full_filename);
+        	if (fileinfoex.attributes & VM_FS_ATTRIBUTE_DIRECTORY) {
+            	printf(" %*s %8s\n", len, filename, "<DIR>");
+        	}
+        	else {
+				filetime.tm_hour = fileinfoex.modify_datetime.hour;
+				filetime.tm_min = fileinfoex.modify_datetime.minute;
+				filetime.tm_sec = fileinfoex.modify_datetime.second;
+				filetime.tm_mday = fileinfoex.modify_datetime.day;
+				filetime.tm_mon = fileinfoex.modify_datetime.month-1;
+				filetime.tm_year = fileinfoex.modify_datetime.year-1900;
+				char ftime[20] = {0};
+				strftime(ftime, 18, "%D %T", &filetime);
+				printf(" %*s %8u %s\n", len, filename, fileinfoex.file_size, ftime);
+				total += fileinfoex.file_size;
+				nfiles++;
+        	}
+            vm_fs_find_close_ex(filehandleex);
+
+            /* find the next file */
+            ret = vm_fs_find_next(filehandle, &fileinfo);
+        } while (0 == ret);
+        vm_fs_find_close(filehandle);
+        printf("\nTotal %d byte(s) in %d file(s)\n", total, nfiles);
+        printf("Drive free: %d,  App data free: %d\n", vm_fs_get_disk_free_space(vm_fs_get_internal_drive_letter()), vm_fs_app_data_get_free_space());
+    }
+    else {
+        printf("No files found.\n");
+    }
+
+    return 0;
+}
 
 static int os_exit (lua_State *L) {
   exit(luaL_optint(L, 1, EXIT_SUCCESS));
@@ -290,6 +407,15 @@ const LUA_REG_TYPE syslib[] = {
   {LSTRKEY("poke"), LFUNCVAL(os_poke)},
   {LSTRKEY("peek"), LFUNCVAL(os_peek)},
   {LSTRKEY("symbol"), LFUNCVAL(os_symbol)},
+
+  {LSTRKEY("remove"),   	LFUNCVAL(os_remove)},
+  {LSTRKEY("rename"),   	LFUNCVAL(os_rename)},
+  {LSTRKEY("copy"),     	LFUNCVAL(os_copy)},
+  {LSTRKEY("mkdir"),    	LFUNCVAL(os_mkdir)},
+  {LSTRKEY("rmdir"),    	LFUNCVAL(os_rmdir)},
+  {LSTRKEY("setlocale"),	LFUNCVAL(os_setlocale)},
+  {LSTRKEY("time"),     	LFUNCVAL(os_time)},
+  {LSTRKEY("list"),     	LFUNCVAL(os_listfiles)},
   {LNILKEY, LNILVAL}
 };
 
