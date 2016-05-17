@@ -125,16 +125,16 @@ void lua_setup()
     lua_gc(L, LUA_GCSTOP, 0); /* stop collector during initialization */
     luaL_openlibs(L);         /* open libraries */
 
-//    luaopen_audio(L);
-//    luaopen_gsm(L);
-//    luaopen_timer(L);
-//    luaopen_gpio(L);
+    luaopen_audio(L);
+    luaopen_gsm(L);
+    luaopen_timer(L);
+    luaopen_gpio(L);
     luaopen_screen(L);
-//    luaopen_i2c(L);
-//    luaopen_tcp(L);
-//    luaopen_https(L);
-//    luaopen_bluetooth(L);
-//    luaopen_button(L);
+    luaopen_i2c(L);
+    luaopen_tcp(L);
+    luaopen_https(L);
+    luaopen_bluetooth(L);
+    luaopen_button(L);
     luaopen_os(L);
 //    luaopen_io(L);
 

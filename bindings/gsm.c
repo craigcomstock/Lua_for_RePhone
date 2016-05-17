@@ -7,6 +7,7 @@
 #include "vmchset.h"
 #include "vmgsm_sim.h"
 #include "vmgsm_sms.h"
+#include "vmgsm_cell.h"
 
 #include "lua.h"
 #include "lauxlib.h"
@@ -261,21 +262,54 @@ int gsm_on_new_message(lua_State *L)
     return 1;
 }
 
+int gsm_cell_info(lua_State *L)
+{
+	vm_gsm_cell_info_t *info;
+//	vm_gsm_cell_info_t *neighbor_info
+//	int num_neighbors;
+
+	vm_gsm_cell_get_current_cell_info(info);
+	lua_pushnumber(L,info->arfcn);
+	lua_pushnumber(L,info->bsic);
+	lua_pushnumber(L,info->rxlev);
+	lua_pushnumber(L,info->mcc);
+	lua_pushnumber(L,info->mnc);
+	lua_pushnumber(L,info->lac);
+	lua_pushnumber(L,info->ci);
+	// arfcn, bsic, rxlev, mcc, mnc, lac, ci
+
+//	vm_gsm_cell_get_neighbor_cell_info(neighbor_info,num_neighbors);
+
+	return 7;
+}
+
+int gsm_sim_info(lua_State *L)
+{
+	VM_GSM_SIM_ID id = vm_gsm_sim_get_active_sim_card();
+
+	VM_GSM_SIM_STATUS status = vm_gsm_sim_get_card_status(id);
+	lua_pushnumber(L,status); // -1 ERROR, 0=VACANT, 1=WORKING
+
+	return 1;
+}
+
 #undef MIN_OPT_LEVEL
 #define MIN_OPT_LEVEL 0
 #include "lrodefs.h"
 
 const LUA_REG_TYPE gsm_map[] = {{LSTRKEY("call"), LFUNCVAL(gsm_call)},
-                                {LSTRKEY("answer"), LFUNCVAL(gsm_anwser)},
-                                {LSTRKEY("hang"), LFUNCVAL(gsm_hang)},
-                                {LSTRKEY("on_incoming_call"), LFUNCVAL(gsm_on_incoming_call)},
-                                {LSTRKEY("text"), LFUNCVAL(gsm_text)},
-                                {LSTRKEY("on_new_message"), LFUNCVAL(gsm_on_new_message)},
-                                {LNILKEY, LNILVAL}};
+	{LSTRKEY("answer"), LFUNCVAL(gsm_anwser)},
+	{LSTRKEY("hang"), LFUNCVAL(gsm_hang)},
+	{LSTRKEY("on_incoming_call"), LFUNCVAL(gsm_on_incoming_call)},
+	{LSTRKEY("text"), LFUNCVAL(gsm_text)},
+	{LSTRKEY("on_new_message"), LFUNCVAL(gsm_on_new_message)},
+	{LSTRKEY("cell_info"), LFUNCVAL(gsm_cell_info)},
+	{LSTRKEY("sim_info"), LFUNCVAL(gsm_sim_info)},
+	{LNILKEY, LNILVAL}};
 
 LUALIB_API int luaopen_gsm(lua_State *L) {
-  vm_gsm_tel_call_reg_listener(call_listener_func);
+	vm_gsm_tel_call_reg_listener(call_listener_func);
 
-  luaL_register(L, "gsm", gsm_map);
-  return 1;
+	luaL_register(L, "gsm", gsm_map);
+	return 1;
 }

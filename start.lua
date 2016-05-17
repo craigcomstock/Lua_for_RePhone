@@ -15,3 +15,4 @@ end
 
 dofile('call.lua')
 dofile('screen.lua')
+dofile('os.lua')

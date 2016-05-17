@@ -1,5 +1,4 @@
-dofile('screen.lua')
-foreground = 255
+foreground = 0xffffff
 background = 0
 
 clear = function(color)
@@ -27,18 +26,38 @@ end
 
 screen.init()
 screen.set_brightness(50)
+
 dim = function()
-	screen.set_brightness(10)
+	screen.set_brightness(5)
 end
 bright = function()
 	screen.set_brightness(60)
+end
+-- TODO make this execute on a timeout!!!
+off = function()
+	screen.set_brightness(0)
 end
 
 touch = {};
 touch_i = 0;
 
-screen.ontouch( function(t,x,y) 
+screen.touch( function(t,x,y) 
+	print(t,x,y);
+	if (t==4) then
+		touch_i = 0;
+		touch = {};
+		if (yes ~= nil) then
+			yes();
+		end
+	end
+
+	if (t==1) then
+		touch_i = 0;
+		touch = {};
+	end
+
 	touch_i = touch_i + 1;
+
 	touch[touch_i] = {t=t, x=x, y=y}
 	if (t==2) then
 		ongesture(touch);
@@ -46,5 +65,15 @@ screen.ontouch( function(t,x,y)
 end)
 
 ongesture = function(touches)
-	print(touches);
+
+	for i,touch in pairs(touches) do
+		print(touch.t,touch.x,touch.y);
+	end
+
+	if ((#touches == 2) and 
+		(touches[1].t == 1) and
+		(touches[2].t == 2)) then
+		if (no ~= nil) then no(); end
+	end
+	
 end

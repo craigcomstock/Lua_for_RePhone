@@ -1,6 +1,8 @@
 call = gsm.call
-hang = hangup = gsm.hang
+hang = gsm.hang
+hangup = hang
 answer = gsm.accept
+text = gsm.text -- num,msg
 gsm.on_incoming_call( function(phone_number)
 	-- ring.start();
 	-- save_call(phone_number)
@@ -10,9 +12,10 @@ gsm.on_incoming_call( function(phone_number)
 	no = function()
 		hangup()
 	end
-end
+end)
+
 gsm.on_new_message( function (phone_number, message)
 	-- chirp()
 	-- save message
-	show(phone_number,message)
-end
+	show(phone_number+':'+message)
+end)
