@@ -126,6 +126,10 @@ int _gsm_call(const char *phone_number) {
   data.user_data = NULL;
   data.callback = call_voiceCall_callback;
 
+  // VM_GSM_TEL_DEVICE (0=NORMAL | 1=HEADSET | 2=LOUDSPK)
+  vm_gsm_tel_set_output_device(VM_GSM_TEL_DEVICE_LOUDSPK); // VM_GSM_TEL_DEVICE
+  vm_gsm_tel_set_volume(VM_AUDIO_VOLUME_6);
+
   return vm_gsm_tel_call_actions(&data);
 }
 
@@ -198,7 +202,7 @@ int gsm_on_incoming_call(lua_State *L)
 /* The callback of sending SMS, for checking if an SMS is sent successfully. */
 void _gsm_text_callback(vm_gsm_sms_callback_t* callback_data){
     if(callback_data->action == VM_GSM_SMS_ACTION_SEND){
-        vm_log_debug("send sms callback, result = %d", callback_data->result);
+        printf("send sms callback, result = %d", callback_data->result);
     }
 }
 
@@ -219,6 +223,8 @@ int gsm_text(lua_State *L)
 }
 
 int _gsm_on_new_message(vm_gsm_sms_event_t* event_data){
+	printf("CRAIG _gsm_on_new_message, event_data->event_id=%d\n", event_data->event_id);
+
     vm_gsm_sms_event_new_sms_t * event_new_message_ptr;
     vm_gsm_sms_new_message_t * new_message_ptr = NULL;
     char content[100];
